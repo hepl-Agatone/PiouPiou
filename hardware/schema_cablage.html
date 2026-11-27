@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nichoir – câblage V2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: dossier technique sobre, écrit pour un jury d'ingénieurs
+   IDEA: planche de schéma électronique imprimée, avec cartouche et légendes
+   PICTURE: le schéma de câblage complet, grand, en tête de page
+   COLOUR and TYPE: blanc, encre, carmin = VBAT, bleu de Prusse = logique de blocage ; Literata
+   LAYOUT: titre court, schéma pleine largeur, puis tableaux de référence */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0f1217);--ink:light-dark(#10131a,#e6e8ee);--mute:light-dark(#5b6170,#9aa1b0);--line:light-dark(#dfe2e8,#2a303b);--red:light-dark(#c1121f,#ff6b6b);--blue:light-dark(#0b4f8a,#6fb3ff);--paper:light-dark(#ffffff,#151a22);--soft:light-dark(#f5f6f8,#171c25)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Literata,Georgia,serif;overflow-x:clip}
+.band{padding:clamp(24px,3.5vw,52px) max(5vw,16px)}
+main{max-width:1240px;margin:0 auto}
+h1{font-size:clamp(30px,4vw,44px);line-height:1.05;margin:0 0 10px;font-weight:600;text-wrap:balance}
+h2{font-size:24px;line-height:1.15;margin:44px 0 12px;font-weight:600}
+p{max-width:70ch}
+.lead{color:var(--mute);margin:0}
+nav{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;padding:12px max(5vw,16px);border-block:1px solid var(--line)}
+nav a{color:var(--blue);text-decoration:none}nav a:hover{text-decoration:underline}
+pre,.scroll{overflow-x:auto}code{overflow-wrap:anywhere;font-size:14px}
+html{scroll-padding-top:24px}
+figure{margin:18px 0 0}
+.plate{border:1px solid var(--line);background:var(--paper);padding:8px}
+.plate svg{display:block;width:100%;height:auto;color:var(--ink);font-family:Literata,Georgia,serif}
+#wiring svg{min-width:960px}
+#arch svg{min-width:820px}
+figcaption{color:var(--mute);font-size:14px;margin-top:8px;max-width:90ch}
+svg .w{stroke:currentColor;stroke-width:1.7}
+svg .nf{fill:none}
+svg .body{fill:var(--paper)}
+svg .thick{stroke:currentColor;stroke-width:3}
+svg .bat{stroke:var(--red);stroke-width:2.4;fill:none}
+svg .sig{stroke:var(--blue);stroke-width:2.4;fill:none}
+svg .btn{stroke:currentColor;stroke-width:2.4;fill:none}
+svg .blk{stroke:var(--blue);stroke-width:2.2}
+svg .dot,svg .fillw{fill:currentColor}
+svg .dotr{fill:var(--red)}
+svg .frame{fill:none;stroke:var(--mute);stroke-width:1.2;stroke-dasharray:7 5}
+svg .int{fill:var(--soft)}
+svg .dim{opacity:.62}
+svg text{fill:currentColor;stroke:none}
+svg .t{font-size:12.5px}svg .tb{font-size:13px;font-weight:600}svg .ts{font-size:11.5px}svg .tp{font-size:10.5px;fill:var(--mute)}
+svg .red{fill:var(--red)}svg .blue{fill:var(--blue)}svg .mute{fill:var(--mute)}svg .green{fill:currentColor;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px;margin-top:10px}
+.legend span::before{content:"";display:inline-block;width:22px;height:3px;vertical-align:middle;margin-right:7px;background:var(--c)}
+table{border-collapse:collapse;width:100%;font-size:15px;margin-top:8px}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-weight:600;border-bottom:2px solid var(--ink)}
+td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+.k{font-weight:600}
+.blue{color:var(--blue)}.red{color:var(--red)}
+ol.seq{padding-left:1.3em}ol.seq li{margin:3px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px 36px}
+.box{border-left:3px solid var(--blue);padding:4px 0 4px 16px;margin:14px 0}
+.warn{border-left-color:var(--red)}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}}
+</style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script></head>
+<body>
+<header class="band" style="padding-bottom:18px">
+<main>
+<h1>Nichoir connecté : la 2ᵉ bascule du CD4013 bloque le PIR pendant 5 min</h1>
+<p class="lead">Schéma de câblage V2. Tous les composants de la V1 sont conservés. La sortie Q de la bascule 2 maintient la bascule 1 en RESET, donc un oiseau qui bouge pendant le délai ne rallume plus la carte. Seuls des passifs sont ajoutés : filtres, réservoir et shunt de mesure.</p>
+</main>
+</header>
+<nav class="scroll"><a href="#cablage">Schéma de câblage</a><a href="#etats">États</a><a href="#firmware">Séquences firmware</a><a href="#netlist">Connexions</a><a href="#nomenclature">Nomenclature</a><a href="#banc">Tests au banc</a><a href="#archi">Architecture globale</a></nav>
+<div class="band" style="padding-top:20px">
+<main>
+
+<section id="cablage">
+<figure>
+<div class="plate scroll" id="wiring">
+<svg viewBox="0 0 1210 800" role="img" aria-label="Schéma de câblage avec filtres passifs : PIR vers horloge de la bascule 1, sortie Q de la bascule 1 vers Q1 qui simule l'appui sur S1, sortie Q de la bascule 2 vers RESET de la bascule 1, G13 vers SET de la bascule 2, G4 vers RESET de la bascule 2 et vers la LED IR.">
+<rect x="16" y="24" width="842" height="770" class="frame"/>
+<text x="30" y="46" class="tb mute" text-anchor="start">Carte d'interface (breakout) — composants du kit + passifs ajoutés</text>
+<rect x="870" y="24" width="324" height="770" class="frame int"/>
+<text x="882" y="46" class="tb mute" text-anchor="start">TimerCam — circuit interne existant</text>
+<line x1="60" y1="70" x2="1132" y2="70" class="bat"/>
+<text x="84" y="63" class="tb red" text-anchor="start">VBAT  3,0 … 4,2 V</text>
+<circle cx="195" cy="70" r="3.6" class="dotr"/>
+<circle cx="330" cy="70" r="3.6" class="dotr"/>
+<circle cx="430" cy="70" r="3.6" class="dotr"/>
+<circle cx="470" cy="70" r="3.6" class="dotr"/>
+<line x1="60" y1="70" x2="60" y2="380" class="bat"/>
+<circle cx="60" cy="70" r="3.6" class="dotr"/>
+<line x1="42" y1="380" x2="78" y2="380" class="w"/>
+<line x1="50" y1="388" x2="70" y2="388" class="thick"/>
+<line x1="42" y1="396" x2="78" y2="396" class="w"/>
+<line x1="50" y1="404" x2="70" y2="404" class="thick"/>
+<text x="36" y="384" class="tb red" text-anchor="end">+</text>
+<line x1="60" y1="404" x2="60" y2="450" class="w"/>
+<circle cx="60" cy="450" r="3.6" class="dot"/>
+<line x1="60" y1="450" x2="60" y2="475.0" class="w"/>
+<line x1="60" y1="515.0" x2="60" y2="540" class="w"/>
+<rect x="54" y="475.0" width="12" height="40" class="w body"/>
+<text x="72" y="493.0" class="tb" text-anchor="start">R9</text>
+<text x="72" y="507.0" class="ts" text-anchor="start">1 Ω shunt</text>
+<circle cx="60" cy="540" r="3.6" class="dot"/>
+<polyline points="60,450 150,450 150,478" class="w nf"/>
+<circle cx="150" cy="482" r="4" class="w body"/>
+<circle cx="150" cy="508" r="4" class="w body"/>
+<rect x="143" y="476" width="14" height="38" rx="3" class="w nf"/>
+<polyline points="150,512 150,540 60,540" class="w nf"/>
+<text x="162" y="492" class="tb" text-anchor="start">JP1</text>
+<text x="162" y="506" class="ts" text-anchor="start">cavalier</text>
+<text x="162" y="519" class="tp" text-anchor="start">(retiré = mesure)</text>
+<line x1="60" y1="540" x2="60" y2="770" class="w"/>
+<line x1="60" y1="770" x2="880" y2="770" class="w"/>
+<text x="84" y="392" class="tb" text-anchor="start">BT1</text>
+<text x="84" y="406" class="ts" text-anchor="start">LiPo 3,7 V</text>
+<text x="84" y="419" class="ts" text-anchor="start">2000 mAh</text>
+<text x="500" y="763" class="ts mute" text-anchor="middle">GND commun (J4 −)</text>
+<rect x="140" y="190" width="110" height="90" class="w body"/>
+<text x="195" y="236" class="tb" text-anchor="middle">U1  PIR</text>
+<text x="195" y="252" class="ts" text-anchor="middle">SR602</text>
+<line x1="195" y1="70" x2="195" y2="82.0" class="bat"/>
+<line x1="195" y1="122.0" x2="195" y2="134" class="bat"/>
+<rect x="189" y="82.0" width="12" height="40" class="bat body"/>
+<text x="207" y="100.0" class="tb" text-anchor="start">R7</text>
+<text x="207" y="114.0" class="ts" text-anchor="start">100 Ω</text>
+<line x1="195" y1="134" x2="195" y2="190" class="bat"/>
+<circle cx="195" cy="152" r="3.6" class="dot"/>
+<line x1="78" y1="152" x2="195" y2="152" class="w"/>
+<circle cx="118" cy="152" r="3.6" class="dot"/>
+<line x1="78" y1="152" x2="78" y2="162" class="w"/>
+<line x1="66" y1="162" x2="90" y2="162" class="thick"/>
+<line x1="66" y1="168" x2="90" y2="168" class="thick"/>
+<line x1="78" y1="168" x2="78" y2="174" class="w"/>
+<line x1="78" y1="174" x2="78" y2="182" class="w"/>
+<line x1="68" y1="182" x2="88" y2="182" class="w"/>
+<line x1="72" y1="186" x2="84" y2="186" class="w"/>
+<line x1="76" y1="190" x2="80" y2="190" class="w"/>
+<line x1="118" y1="152" x2="118" y2="162" class="w"/>
+<line x1="106" y1="162" x2="130" y2="162" class="thick"/>
+<line x1="106" y1="168" x2="130" y2="168" class="thick"/>
+<line x1="118" y1="168" x2="118" y2="174" class="w"/>
+<line x1="118" y1="174" x2="118" y2="182" class="w"/>
+<line x1="108" y1="182" x2="128" y2="182" class="w"/>
+<line x1="112" y1="186" x2="124" y2="186" class="w"/>
+<line x1="116" y1="190" x2="120" y2="190" class="w"/>
+<text x="78" y="204" class="tb" text-anchor="middle">C3</text>
+<text x="78" y="217" class="ts" text-anchor="middle">10 µF</text>
+<text x="118" y="204" class="tb" text-anchor="middle">C4</text>
+<text x="118" y="217" class="ts" text-anchor="middle">100 nF</text>
+<text x="201" y="204" class="tp" text-anchor="start">VCC</text>
+<line x1="195" y1="280" x2="195" y2="292" class="w"/>
+<line x1="195" y1="292" x2="195" y2="300" class="w"/>
+<line x1="185" y1="300" x2="205" y2="300" class="w"/>
+<line x1="189" y1="304" x2="201" y2="304" class="w"/>
+<line x1="193" y1="308" x2="197" y2="308" class="w"/>
+<text x="201" y="274" class="tp" text-anchor="start">GND</text>
+<text x="244" y="239" class="tp" text-anchor="end">OUT</text>
+<line x1="250" y1="235" x2="264.0" y2="235" class="sig"/>
+<line x1="304.0" y1="235" x2="318" y2="235" class="sig"/>
+<rect x="264.0" y="229" width="40" height="12" class="sig body"/>
+<text x="284.0" y="224" class="ts" text-anchor="middle">R8 1 kΩ</text>
+<circle cx="322" cy="235" r="3.6" class="dot"/>
+<line x1="318" y1="235" x2="340" y2="235" class="sig"/>
+<polyline points="340,235 340,210 360,210" class="sig nf"/>
+<line x1="322" y1="235" x2="322" y2="246" class="w"/>
+<line x1="310" y1="246" x2="334" y2="246" class="thick"/>
+<line x1="310" y1="252" x2="334" y2="252" class="thick"/>
+<line x1="322" y1="252" x2="322" y2="258" class="w"/>
+<line x1="322" y1="258" x2="322" y2="266" class="w"/>
+<line x1="312" y1="266" x2="332" y2="266" class="w"/>
+<line x1="316" y1="270" x2="328" y2="270" class="w"/>
+<line x1="320" y1="274" x2="324" y2="274" class="w"/>
+<text x="322" y="292" class="ts" text-anchor="middle">C5 1 nF</text>
+<rect x="360" y="130" width="140" height="160" class="w body"/>
+<text x="430" y="228" class="tb" text-anchor="middle">U2a</text>
+<text x="430" y="244" class="ts" text-anchor="middle">CD4013</text>
+<text x="430" y="258" class="ts mute" text-anchor="middle">bascule 1</text>
+<line x1="430" y1="70" x2="430" y2="130" class="bat"/>
+<text x="436" y="125" class="tp" text-anchor="start">VDD 14</text>
+<line x1="470" y1="70" x2="470" y2="82" class="bat"/>
+<line x1="458" y1="82" x2="482" y2="82" class="thick"/>
+<line x1="458" y1="90" x2="482" y2="90" class="thick"/>
+<line x1="470" y1="90" x2="470" y2="98" class="w"/>
+<line x1="470" y1="98" x2="470" y2="106" class="w"/>
+<line x1="460" y1="106" x2="480" y2="106" class="w"/>
+<line x1="464" y1="110" x2="476" y2="110" class="w"/>
+<line x1="468" y1="114" x2="472" y2="114" class="w"/>
+<text x="488" y="88" class="ts" text-anchor="start">C1 100 nF</text>
+<text x="367" y="164" class="t" text-anchor="start">D</text>
+<text x="356" y="156" class="tp" text-anchor="end">5</text>
+<polyline points="360,160 330,160 330,70" class="bat nf"/>
+<text x="376" y="214" class="t" text-anchor="start">CLK</text>
+<text x="356" y="206" class="tp" text-anchor="end">3</text>
+<polygon points="360,204 369,210 360,216" class="w nf"/>
+<text x="367" y="266" class="t" text-anchor="start">SET</text>
+<text x="356" y="258" class="tp" text-anchor="end">6</text>
+<line x1="350" y1="262" x2="360" y2="262" class="w"/>
+<line x1="350" y1="262" x2="350" y2="270" class="w"/>
+<line x1="340" y1="270" x2="360" y2="270" class="w"/>
+<line x1="344" y1="274" x2="356" y2="274" class="w"/>
+<line x1="348" y1="278" x2="352" y2="278" class="w"/>
+<text x="493" y="174" class="t" text-anchor="end">Q</text>
+<text x="504" y="166" class="tp" text-anchor="start">1</text>
+<line x1="500" y1="170" x2="536.0" y2="170" class="w"/>
+<line x1="576.0" y1="170" x2="612" y2="170" class="w"/>
+<rect x="536.0" y="164" width="40" height="12" class="w body"/>
+<text x="556.0" y="159" class="ts" text-anchor="middle">R1 1 kΩ</text>
+<circle cx="596" cy="170" r="3.6" class="dot"/>
+<line x1="596" y1="170" x2="596" y2="185.0" class="w"/>
+<line x1="596" y1="225.0" x2="596" y2="240" class="w"/>
+<rect x="590" y="185.0" width="12" height="40" class="w body"/>
+<text x="584" y="203.0" class="tb" text-anchor="end">R2</text>
+<text x="584" y="217.0" class="ts" text-anchor="end">1 MΩ</text>
+<line x1="596" y1="240" x2="596" y2="248" class="w"/>
+<line x1="586" y1="248" x2="606" y2="248" class="w"/>
+<line x1="590" y1="252" x2="602" y2="252" class="w"/>
+<line x1="594" y1="256" x2="598" y2="256" class="w"/>
+<text x="493" y="236" class="t" text-anchor="end">Q̄</text>
+<text x="504" y="228" class="tp" text-anchor="start">2</text>
+<line x1="500" y1="232" x2="516" y2="232" class="w"/>
+<line x1="516" y1="227" x2="526" y2="237" class="w"/>
+<line x1="516" y1="237" x2="526" y2="227" class="w"/>
+<text x="530" y="236" class="tp" text-anchor="start">NC</text>
+<text x="430" y="284" class="tp" text-anchor="middle">RESET 4</text>
+<line x1="612" y1="170" x2="626" y2="170" class="w"/>
+<line x1="626" y1="156" x2="626" y2="184" class="w"/>
+<line x1="634" y1="156" x2="634" y2="162" class="w"/>
+<line x1="634" y1="168" x2="634" y2="174" class="w"/>
+<line x1="634" y1="180" x2="634" y2="186" class="w"/>
+<line x1="634" y1="159" x2="644" y2="159" class="w"/>
+<line x1="644" y1="159" x2="644" y2="140" class="w"/>
+<line x1="634" y1="183" x2="644" y2="183" class="w"/>
+<line x1="644" y1="183" x2="644" y2="200" class="w"/>
+<line x1="634" y1="171" x2="644" y2="171" class="w"/>
+<line x1="644" y1="171" x2="644" y2="183" class="w"/>
+<polygon points="635,171 642,167 642,175" class="fillw"/>
+<text x="652" y="168" class="tb" text-anchor="start">Q1</text>
+<text x="652" y="182" class="ts" text-anchor="start">2N7000</text>
+<text x="649" y="148" class="tp" text-anchor="start">D</text>
+<text x="649" y="198" class="tp" text-anchor="start">S</text>
+<polyline points="644,140 644,128 880,128" class="btn nf"/>
+<text x="760" y="121" class="ts green" text-anchor="middle">faux appui → USER_SWC</text>
+<line x1="644" y1="200" x2="644" y2="212" class="w"/>
+<line x1="644" y1="212" x2="644" y2="220" class="w"/>
+<line x1="634" y1="220" x2="654" y2="220" class="w"/>
+<line x1="638" y1="224" x2="650" y2="224" class="w"/>
+<line x1="642" y1="228" x2="646" y2="228" class="w"/>
+<rect x="360" y="400" width="140" height="160" class="w body blk"/>
+<text x="430" y="470" class="tb" text-anchor="middle">U2b</text>
+<text x="430" y="486" class="ts" text-anchor="middle">CD4013</text>
+<text x="430" y="500" class="ts mute" text-anchor="middle">bascule 2</text>
+<text x="430" y="514" class="ts blue" text-anchor="middle">= blocage PIR</text>
+<text x="367" y="434" class="t" text-anchor="start">D</text>
+<text x="356" y="426" class="tp" text-anchor="end">9</text>
+<text x="376" y="484" class="t" text-anchor="start">CLK</text>
+<text x="356" y="476" class="tp" text-anchor="end">11</text>
+<polygon points="360,474 369,480 360,486" class="w nf"/>
+<polyline points="360,430 340,430 340,492" class="w nf"/>
+<line x1="340" y1="480" x2="360" y2="480" class="w"/>
+<circle cx="340" cy="480" r="3.6" class="dot"/>
+<line x1="340" y1="492" x2="340" y2="500" class="w"/>
+<line x1="330" y1="500" x2="350" y2="500" class="w"/>
+<line x1="334" y1="504" x2="346" y2="504" class="w"/>
+<line x1="338" y1="508" x2="342" y2="508" class="w"/>
+<text x="367" y="536" class="t" text-anchor="start">SET</text>
+<text x="356" y="528" class="tp" text-anchor="end">8</text>
+<text x="493" y="444" class="t" text-anchor="end">Q</text>
+<text x="504" y="436" class="tp" text-anchor="start">13</text>
+<text x="493" y="504" class="t" text-anchor="end">Q̄</text>
+<text x="504" y="496" class="tp" text-anchor="start">12</text>
+<line x1="500" y1="500" x2="516" y2="500" class="w"/>
+<line x1="516" y1="495" x2="526" y2="505" class="w"/>
+<line x1="516" y1="505" x2="526" y2="495" class="w"/>
+<text x="530" y="504" class="tp" text-anchor="start">NC</text>
+<polyline points="500,440 540,440 540,322 430,322 430,290" class="sig nf"/>
+<text x="532" y="346" class="ts blue" text-anchor="end">Q2 → RESET1</text>
+<text x="532" y="360" class="ts blue" text-anchor="end">PIR ignoré</text>
+<line x1="470" y1="560" x2="470" y2="576" class="w"/>
+<line x1="470" y1="576" x2="470" y2="584" class="w"/>
+<line x1="460" y1="584" x2="480" y2="584" class="w"/>
+<line x1="464" y1="588" x2="476" y2="588" class="w"/>
+<line x1="468" y1="592" x2="472" y2="592" class="w"/>
+<text x="476" y="572" class="tp" text-anchor="start">VSS 7</text>
+<text x="424" y="574" class="tp" text-anchor="end">RESET 10</text>
+<polyline points="430,560 430,616 880,616" class="sig nf"/>
+<polyline points="360,532 300,532 300,666 880,666" class="sig nf"/>
+<circle cx="300" cy="666" r="3.6" class="dot"/>
+<line x1="300" y1="666" x2="300" y2="681.0" class="w"/>
+<line x1="300" y1="721.0" x2="300" y2="736" class="w"/>
+<rect x="294" y="681.0" width="12" height="40" class="w body"/>
+<text x="288" y="699.0" class="tb" text-anchor="end">R3</text>
+<text x="288" y="713.0" class="ts" text-anchor="end">100 kΩ</text>
+<line x1="300" y1="736" x2="300" y2="744" class="w"/>
+<line x1="290" y1="744" x2="310" y2="744" class="w"/>
+<line x1="294" y1="748" x2="306" y2="748" class="w"/>
+<line x1="298" y1="752" x2="302" y2="752" class="w"/>
+<text x="850" y="609" class="ts blue" text-anchor="end">G4 (Grove SDA)</text>
+<text x="850" y="659" class="ts blue" text-anchor="end">G13 (Grove SCL)</text>
+<line x1="790" y1="168" x2="790" y2="178" class="bat"/>
+<line x1="781" y1="168" x2="799" y2="168" class="bat"/>
+<text x="790" y="163" class="tb red" text-anchor="middle">VBAT</text>
+<line x1="790" y1="178" x2="790" y2="193.0" class="w"/>
+<line x1="790" y1="233.0" x2="790" y2="248" class="w"/>
+<rect x="784" y="193.0" width="12" height="40" class="w body"/>
+<text x="802" y="211.0" class="tb" text-anchor="start">R4</text>
+<text x="802" y="225.0" class="ts" text-anchor="start">47 Ω</text>
+<line x1="790" y1="248" x2="790" y2="262" class="w"/>
+<polygon points="776,262 804,262 790,284" class="w body"/>
+<line x1="776" y1="284" x2="804" y2="284" class="thick"/>
+<line x1="808" y1="266" x2="824" y2="256" class="w"/>
+<line x1="808" y1="276" x2="824" y2="266" class="w"/>
+<text x="770" y="278" class="tb" text-anchor="end">D1</text>
+<text x="770" y="292" class="ts" text-anchor="end">LED IR</text>
+<line x1="790" y1="284" x2="790" y2="320" class="w"/>
+<line x1="758" y1="350" x2="772" y2="350" class="w"/>
+<line x1="772" y1="336" x2="772" y2="364" class="w"/>
+<line x1="780" y1="336" x2="780" y2="342" class="w"/>
+<line x1="780" y1="348" x2="780" y2="354" class="w"/>
+<line x1="780" y1="360" x2="780" y2="366" class="w"/>
+<line x1="780" y1="339" x2="790" y2="339" class="w"/>
+<line x1="790" y1="339" x2="790" y2="320" class="w"/>
+<line x1="780" y1="363" x2="790" y2="363" class="w"/>
+<line x1="790" y1="363" x2="790" y2="380" class="w"/>
+<line x1="780" y1="351" x2="790" y2="351" class="w"/>
+<line x1="790" y1="351" x2="790" y2="363" class="w"/>
+<polygon points="781,351 788,347 788,355" class="fillw"/>
+<text x="798" y="348" class="tb" text-anchor="start">Q2</text>
+<text x="798" y="362" class="ts" text-anchor="start">IRLZ44N</text>
+<text x="795" y="328" class="tp" text-anchor="start">D</text>
+<text x="795" y="378" class="tp" text-anchor="start">S</text>
+<line x1="790" y1="380" x2="790" y2="392" class="w"/>
+<line x1="790" y1="392" x2="790" y2="400" class="w"/>
+<line x1="780" y1="400" x2="800" y2="400" class="w"/>
+<line x1="784" y1="404" x2="796" y2="404" class="w"/>
+<line x1="788" y1="408" x2="792" y2="408" class="w"/>
+<line x1="660" y1="350" x2="680.0" y2="350" class="w"/>
+<line x1="720.0" y1="350" x2="740" y2="350" class="w"/>
+<rect x="680.0" y="344" width="40" height="12" class="w body"/>
+<text x="700.0" y="339" class="ts" text-anchor="middle">R5 1 kΩ</text>
+<line x1="740" y1="350" x2="758" y2="350" class="w"/>
+<circle cx="748" cy="350" r="3.6" class="dot"/>
+<line x1="748" y1="350" x2="748" y2="370.0" class="w"/>
+<line x1="748" y1="410.0" x2="748" y2="430" class="w"/>
+<rect x="742" y="370.0" width="12" height="40" class="w body"/>
+<text x="736" y="388.0" class="tb" text-anchor="end">R6</text>
+<text x="736" y="402.0" class="ts" text-anchor="end">100 kΩ</text>
+<line x1="748" y1="430" x2="748" y2="438" class="w"/>
+<line x1="738" y1="438" x2="758" y2="438" class="w"/>
+<line x1="742" y1="442" x2="754" y2="442" class="w"/>
+<line x1="746" y1="446" x2="750" y2="446" class="w"/>
+<polyline points="660,350 620,350 620,616" class="sig nf"/>
+<circle cx="620" cy="616" r="3.6" class="dot"/>
+<circle cx="846" cy="70" r="3.6" class="dotr"/>
+<line x1="846" y1="70" x2="846" y2="84" class="bat"/>
+<line x1="834" y1="84" x2="858" y2="84" class="thick"/>
+<line x1="834" y1="90" x2="858" y2="90" class="thick"/>
+<line x1="846" y1="90" x2="846" y2="96" class="w"/>
+<line x1="846" y1="96" x2="846" y2="104" class="w"/>
+<line x1="836" y1="104" x2="856" y2="104" class="w"/>
+<line x1="840" y1="108" x2="852" y2="108" class="w"/>
+<line x1="844" y1="112" x2="848" y2="112" class="w"/>
+<text x="828" y="86" class="tb" text-anchor="end">C2</text>
+<text x="828" y="99" class="ts" text-anchor="end">47 µF</text>
+<g class="dim">
+<line x1="880" y1="70" x2="1132" y2="70" class="bat"/>
+<line x1="1132" y1="70" x2="1132" y2="120" class="bat"/>
+<rect x="1092" y="120" width="80" height="44" class="w body"/>
+<text x="1132" y="139" class="tb" text-anchor="middle">FET3</text>
+<text x="1132" y="154" class="ts" text-anchor="middle">PMOS</text>
+<circle cx="1050" cy="70" r="3.6" class="dotr"/>
+<line x1="1050" y1="70" x2="1050" y2="86.0" class="w"/>
+<line x1="1050" y1="126.0" x2="1050" y2="142" class="w"/>
+<rect x="1044" y="86.0" width="12" height="40" class="w body"/>
+<text x="1038" y="104.0" class="tb" text-anchor="end">R25</text>
+<text x="1038" y="118.0" class="ts" text-anchor="end"></text>
+<line x1="1050" y1="142" x2="1092" y2="142" class="w"/>
+<text x="1044" y="158" class="tp" text-anchor="end">PWR_EN</text>
+<line x1="1050" y1="142" x2="1050" y2="420" class="w"/>
+<circle cx="1050" cy="142" r="3.6" class="dot"/>
+<line x1="880" y1="128" x2="960" y2="128" class="w"/>
+<circle cx="910" cy="128" r="3.6" class="dot"/>
+<text x="884" y="121" class="tp" text-anchor="start">USER_SWC</text>
+<line x1="910" y1="128" x2="910" y2="150" class="w"/>
+<line x1="910" y1="150" x2="900" y2="176" class="w"/>
+<line x1="910" y1="178" x2="910" y2="190" class="w"/>
+<line x1="910" y1="190" x2="910" y2="198" class="w"/>
+<line x1="900" y1="198" x2="920" y2="198" class="w"/>
+<line x1="904" y1="202" x2="916" y2="202" class="w"/>
+<line x1="908" y1="206" x2="912" y2="206" class="w"/>
+<text x="918" y="172" class="ts" text-anchor="start">S1 (PWR)</text>
+<line x1="960" y1="128" x2="960" y2="210" class="w"/>
+<line x1="960" y1="210" x2="984" y2="210" class="w"/>
+<polygon points="1006,200 1006,220 986,210" class="w body"/>
+<line x1="986" y1="200" x2="986" y2="220" class="thick"/>
+<line x1="1006" y1="210" x2="1050" y2="210" class="w"/>
+<circle cx="1050" cy="210" r="3.6" class="dot"/>
+<text x="996" y="194" class="tp" text-anchor="middle">D5</text>
+<line x1="1132" y1="164" x2="1132" y2="186" class="w"/>
+<rect x="1092" y="186" width="80" height="40" class="w body"/>
+<text x="1132" y="204" class="ts" text-anchor="middle">SY8089</text>
+<text x="1132" y="218" class="ts" text-anchor="middle">→ 3,3 V</text>
+<line x1="1132" y1="226" x2="1132" y2="250" class="w"/>
+<rect x="1100" y="250" width="86" height="470" class="w body"/>
+<text x="1143" y="280" class="tb" text-anchor="middle">ESP32</text>
+<text x="1143" y="296" class="ts" text-anchor="middle">+ OV3660</text>
+<text x="1106" y="404" class="tp" text-anchor="start">G33</text>
+<text x="1106" y="452" class="tp" text-anchor="start">G38 ADC</text>
+<text x="1106" y="466" class="tp" text-anchor="start">(VBAT/1,51)</text>
+<text x="1106" y="500" class="tp" text-anchor="start">G2 LED</text>
+<text x="1106" y="620" class="tp" text-anchor="start">G4</text>
+<text x="1106" y="670" class="tp" text-anchor="start">G13</text>
+<text x="1106" y="540" class="tp" text-anchor="start">G12/G14</text>
+<text x="1106" y="553" class="tp" text-anchor="start">I²C RTC</text>
+<rect x="896" y="290" width="96" height="54" class="w body"/>
+<text x="944" y="312" class="tb" text-anchor="middle">U6 BM8563</text>
+<text x="944" y="328" class="tp" text-anchor="middle">RTC (toujours</text>
+<text x="944" y="339" class="tp" text-anchor="middle">alimentée)</text>
+<line x1="992" y1="317" x2="1004" y2="317" class="w"/>
+<polygon points="1024,307 1024,327 1004,317" class="w body"/>
+<line x1="1004" y1="307" x2="1004" y2="327" class="thick"/>
+<line x1="1024" y1="317" x2="1050" y2="317" class="w"/>
+<circle cx="1050" cy="317" r="3.6" class="dot"/>
+<text x="1014" y="300" class="tp" text-anchor="middle">D3  INT</text>
+<rect x="1020" y="380" width="60" height="40" class="w body"/>
+<text x="1050" y="398" class="tb" text-anchor="middle">FET4</text>
+<text x="1050" y="412" class="tp" text-anchor="middle">NMOS</text>
+<line x1="1080" y1="400" x2="1100" y2="400" class="w"/>
+<line x1="1050" y1="420" x2="1050" y2="434" class="w"/>
+<line x1="1050" y1="434" x2="1050" y2="442" class="w"/>
+<line x1="1040" y1="442" x2="1060" y2="442" class="w"/>
+<line x1="1044" y1="446" x2="1056" y2="446" class="w"/>
+<line x1="1048" y1="450" x2="1052" y2="450" class="w"/>
+<line x1="880" y1="616" x2="1100" y2="616" class="w"/>
+<line x1="880" y1="666" x2="1100" y2="666" class="w"/>
+<line x1="880" y1="770" x2="1000" y2="770" class="w"/>
+<text x="1000" y="760" class="tp" text-anchor="start">J4 −</text>
+<text x="884" y="62" class="tp" text-anchor="start">J4 +</text>
+</g>
+</svg>
+</div>
+<figcaption>À gauche, la carte d'interface à câbler ; à droite, l'extrait utile du schéma interne de la TimerCam (déjà sur la carte). Un point = connexion ; deux fils qui se croisent sans point ne sont pas reliés. G4 est tiré à la masse par R5 + R6 (101 kΩ) quand l'ESP32 est coupé, ce qui sert aussi de pull-down à RESET2.</figcaption>
+<div class="legend"><span style="--c:var(--red)">VBAT, toujours sous tension</span><span style="--c:var(--blue)">Logique de réveil et de blocage</span><span style="--c:var(--ink)">Masse et liaisons passives</span></div>
+</figure>
+
+<h2>Ce qui change par rapport à la V1</h2>
+<div class="cols">
+<div>
+<p><span class="k">Bascule 2 câblée</span> (broches 8 à 13) au lieu d'être mise à la masse. Elle mémorise « PIR bloqué » même quand l'ESP32 est éteint, car le CD4013 reste alimenté par VBAT.</p>
+<p><span class="k">Q2 (broche 13) → RESET1 (broche 4)</span>. Tant que Q2 = 1, la bascule 1 est forcée à 0 : les fronts du PIR sont ignorés.</p>
+</div>
+<div>
+<p><span class="k">G13 → SET2 (broche 8)</span> : une impulsion bloque le PIR et relâche le faux bouton dans le même geste. Remplace l'ancienne liaison G13 → RESET1.</p>
+<p><span class="k">G4 → RESET2 (broche 10)</span>, en plus de la LED IR : une impulsion de ~10 µs réarme le PIR, trop courte pour allumer la LED de façon visible.</p>
+</div>
+</div>
+<h2>Passifs ajoutés</h2>
+<table class="stack">
+<thead><tr><th>Réf.</th><th>Valeur</th><th>Où</th><th>Pourquoi</th></tr></thead>
+<tbody>
+<tr><td>C2</td><td class="n">47 µF céramique X5R</td><td>Sur J4, VBAT–GND</td><td>Réserve pour les pics Wi-Fi (300–500 mA) : évite le brownout de l'ESP32 en pleine transmission. Céramique pour une fuite négligeable.</td></tr>
+<tr><td>R7 + C3</td><td class="n">100 Ω + 10 µF</td><td>Alimentation du PIR</td><td>Filtre passe-bas (f<sub>c</sub> ≈ 160 Hz) : les chutes de VBAT pendant le Wi-Fi ne font plus déclencher le PIR. Chute dans R7 : 20 µA × 100 Ω = 2 mV.</td></tr>
+<tr><td>C4</td><td class="n">100 nF</td><td>Broches VCC/GND du PIR</td><td>Découplage local des parasites haute fréquence.</td></tr>
+<tr><td>R8 + C5</td><td class="n">1 kΩ + 1 nF</td><td>PIR OUT → CLK1</td><td>τ = 1 µs : filtre les impulsions parasites captées par le fil du PIR. Le front reste assez raide pour l'horloge du CD4013 (ne pas dépasser ~10 µs).</td></tr>
+<tr><td>R9 + JP1</td><td class="n">1 Ω + cavalier</td><td>En série avec BT1 −</td><td>Mesure du courant à l'oscilloscope (1 mV = 1 mA) sans dessouder. Cavalier en place en usage normal, sinon 0,5 V de chute pendant le Wi-Fi.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="etats">
+<h2>États de la bascule et effet</h2>
+<table class="stack">
+<thead><tr><th>Situation</th><th>Q bascule 1</th><th>Q bascule 2</th><th>Carte</th><th>PIR</th></tr></thead>
+<tbody>
+<tr><td>Veille armée</td><td class="n">0</td><td class="n">0</td><td>coupée (~23 µA)</td><td>actif</td></tr>
+<tr><td>Oiseau détecté</td><td class="n">0 → 1</td><td class="n">0</td><td>s'allume (faux appui sur S1)</td><td>actif</td></tr>
+<tr><td>ESP32 démarré, impulsion G13</td><td class="n">1 → 0</td><td class="n">1</td><td>maintenue par G33</td><td>bloqué</td></tr>
+<tr><td>Délai de 5 min</td><td class="n">0 (forcé)</td><td class="n">1</td><td>coupée</td><td>bloqué, même si l'oiseau bouge</td></tr>
+<tr><td>Fin du délai (timer RTC), impulsion G4</td><td class="n">0</td><td class="n">1 → 0</td><td>allumée ~0,3 s puis coupée</td><td>réarmé</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="firmware">
+<h2>Séquences firmware selon la cause du réveil</h2>
+<p>La cause se lit dans le registre 0x01 du BM8563 : bit TF (compte à rebours écoulé) et bit AF (alarme). Aucun des deux = réveil par le PIR ou par le bouton, traité de la même façon.</p>
+<div class="cols">
+<div>
+<p class="k">A. PIR ou bouton (aucun drapeau)</p>
+<ol class="seq">
+<li>G33 = 1 (maintien), en toute première ligne.</li>
+<li>Impulsion 10 µs sur G13 : PIR bloqué, faux appui relâché.</li>
+<li>Lecture batterie G38 (moyenne de 16), avant le Wi-Fi.</li>
+<li>G4 = 1 (LED IR), photo, G4 = 0. G4 réarme la bascule 2 pendant la photo, donc :</li>
+<li>Nouvelle impulsion sur G13 pour rebloquer.</li>
+<li>Wi-Fi + MQTT : <code>nichoir/&lt;id&gt;/event</code> puis <code>…/photo/&lt;seq&gt;</code>.</li>
+<li>RTC : compte à rebours 300 s + alarme du heartbeat ; effacer TF et AF.</li>
+<li>G33 = 0.</li>
+</ol>
+</div>
+<div>
+<p class="k">B. Fin du délai (TF = 1)</p>
+<ol class="seq">
+<li>G33 = 1, effacer TF, arrêter le compte à rebours.</li>
+<li>Impulsion 10 µs sur G4 : PIR réarmé.</li>
+<li>G33 = 0, puis attendre 500 ms.</li>
+<li>Si l'ESP32 tourne encore, c'est qu'un front PIR est arrivé entre-temps : enchaîner sur la séquence A.</li>
+</ol>
+<p class="k">C. Heartbeat (AF = 1)</p>
+<ol class="seq">
+<li>G33 = 1, lecture batterie, envoi <code>{"type":"heartbeat",…}</code>.</li>
+<li>Si aucun délai n'est en cours (NVS), impulsion sur G4 : réarmement de sécurité.</li>
+<li>Programmer l'alarme suivante (heure:minute, pas le compte à rebours limité à 255 min), effacer AF, G33 = 0.</li>
+</ol>
+</div>
+</div>
+<div class="box warn"><span class="k">Règle à ne jamais casser :</span> avant chaque G33 = 0, une alarme RTC est programmée. Si la bascule 2 reste à 1 sans réveil prévu, le PIR est bloqué pour toujours. À la toute première mise sous batterie, l'état du CD4013 est aléatoire : mise en service par un appui de 2 s sur le bouton PWR (séquence A).</div>
+</section>
+
+<section id="netlist">
+<h2>Liste des connexions</h2>
+<table class="stack">
+<thead><tr><th>Nœud</th><th>Relie</th></tr></thead>
+<tbody>
+<tr><td class="red k">VBAT</td><td>BT1 +, J4 +, C2, R7, U2 broche 14 (VDD), U2 broche 5 (D1), C1, R4</td></tr>
+<tr><td class="k">PIR_VCC</td><td>R7 → U1 VCC ; C3 et C4 → GND</td></tr>
+<tr><td class="k">BAT−</td><td>BT1 − → R9 (1 Ω) → GND ; JP1 en parallèle sur R9</td></tr>
+<tr><td class="k">GND</td><td>R9 / JP1, J4 −, U1 GND, U2 broches 6 (SET1), 7 (VSS), 9 (D2), 11 (CLK2), C1, source Q1, source Q2, R2, R3, R6, C2, C3, C4, C5</td></tr>
+<tr><td class="blue k">PIR_OUT</td><td>U1 OUT → R8 → U2 broche 3 (CLK1) ; C5 de CLK1 → GND</td></tr>
+<tr><td class="k">BTN</td><td>U2 broche 1 (Q1) → R1 → grille de Q1 ; R2 grille → GND</td></tr>
+<tr><td class="k">USER_SWC</td><td>Drain de Q1 → pastille de S1 qui n'est pas à la masse</td></tr>
+<tr><td class="blue k">BLOCK</td><td>U2 broche 13 (Q2) → U2 broche 4 (RESET1)</td></tr>
+<tr><td class="blue k">G13</td><td>Grove SCL → U2 broche 8 (SET2) ; R3 → GND</td></tr>
+<tr><td class="blue k">G4</td><td>Grove SDA → U2 broche 10 (RESET2) ; R5 → grille de Q2 ; R6 grille → GND</td></tr>
+<tr><td class="k">LED</td><td>R4 → anode D1 ; cathode D1 → drain Q2</td></tr>
+<tr><td class="k">Non connectés</td><td>U2 broches 2 (Q̄1) et 12 (Q̄2), Grove 5 V</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="nomenclature">
+<h2>Nomenclature</h2>
+<table class="stack">
+<thead><tr><th>Réf.</th><th>Composant</th><th>Rôle</th></tr></thead>
+<tbody>
+<tr><td>U1</td><td>PIR SR602</td><td>Détection, 20 µA au repos, sortie 3,3 V redéclenchable</td></tr>
+<tr><td>U2</td><td>CD4013</td><td>Bascule 1 : mémorise le front du PIR. Bascule 2 : blocage pendant le délai</td></tr>
+<tr><td>Q1</td><td>2N7000 (TO-92, S-G-D)</td><td>Faux appui sur S1 : ~40 µA à commuter</td></tr>
+<tr><td>Q2</td><td>IRLZ44N (TO-220, G-D-S, languette = drain)</td><td>LED IR : MOSFET logic-level, V<sub>GS(th)</sub> 1 à 2 V, conduit pleinement avec G4 à 3,3 V</td></tr>
+<tr><td>R1, R5</td><td>1 kΩ</td><td>Résistances de grille</td></tr>
+<tr><td>R2</td><td>1 MΩ</td><td>Pull-down de la grille de Q1</td></tr>
+<tr><td>R3, R6</td><td>100 kΩ</td><td>Pull-down de G13 et G4 quand l'ESP32 est coupé</td></tr>
+<tr><td>R7, R8, R9</td><td>100 Ω, 1 kΩ, 1 Ω</td><td>Filtre alim PIR, filtre horloge, shunt de mesure</td></tr>
+<tr><td>C2, C3</td><td>47 µF, 10 µF céramique</td><td>Réservoir Wi-Fi sur J4 ; filtre alim PIR</td></tr>
+<tr><td>C4, C5</td><td>100 nF, 1 nF</td><td>Découplage PIR ; filtre horloge</td></tr>
+<tr><td>JP1</td><td>Cavalier 2 broches</td><td>Court-circuite R9 hors mesure</td></tr>
+<tr><td>R4</td><td>47 Ω, 1/4 W</td><td>Courant de la LED IR (≈ 40 à 54 mA selon VBAT)</td></tr>
+<tr><td>C1</td><td>100 nF</td><td>Découplage de U2, au plus près des broches 14 et 7</td></tr>
+<tr><td>D1</td><td>LED IR</td><td>Éclairage pendant la photo</td></tr>
+<tr><td>BT1</td><td>LiPo 3,7 V 2000 mAh</td><td>Sur le connecteur batterie SH1.0 de la TimerCam</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="banc">
+<h2>À vérifier au banc avant de souder</h2>
+<p>Sans composant ajouté, plusieurs marges sont justes. Ce sont aussi de bonnes mesures à mettre dans la partie C2 du rapport.</p>
+<table class="stack">
+<thead><tr><th>Point</th><th>Risque</th><th>Test</th></tr></thead>
+<tbody>
+<tr><td>Q1 commandé par Q = VBAT</td><td>V<sub>GS(th)</sub> du 2N7000 jusqu'à 3 V : batterie vide, la carte ne se rallume plus</td><td>Alimentation de labo à 3,0 V : la main doit encore allumer la carte</td></tr>
+<tr><td>Q2 (IRLZ44N) commandé par G4 à 3,3 V</td><td>Faible : logic-level. Grille de ~1,7 nF, τ = R5 × C ≈ 2 µs</td><td>Mesurer V<sub>DS</sub> de Q2 LED allumée (quelques mV attendus)</td></tr>
+<tr><td>PIR et G13 vers le CD4013</td><td>V<sub>IH</sub> = 0,7 × VDD = 2,94 V à 4,2 V : 0,3 V de marge</td><td>Batterie pleine, vérifier chaque basculement</td></tr>
+<tr><td>Blocage</td><td>La bascule 1 doit rester à 0 pendant le délai</td><td>Q2 forcé à 1, agiter la main devant le PIR : aucune LED témoin sur Q1</td></tr>
+<tr><td>Impulsion de 10 µs</td><td>Largeur minimale de SET/RESET du CD4013 (≈ 0,2 µs à 5 V)</td><td>Oscilloscope sur G4 et Q2</td></tr>
+<tr><td>Courant de veille et par réveil</td><td>Hypothèses du bilan énergétique (23 µA, ~0,2 mAh par photo)</td><td>Retirer JP1, oscilloscope aux bornes de R9 (1 mV = 1 mA), intégrer l'aire sous la courbe</td></tr>
+<tr><td>Extinction</td><td>Avec l'USB branché, la carte ne se coupe jamais</td><td>Tous les tests d'extinction sur batterie, USB débranché</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="archi">
+<h2>Architecture globale (partie 1 du rapport)</h2>
+<figure>
+<div class="plate scroll" id="arch">
+<svg viewBox="0 0 1120 320" role="img" aria-label="Le nœud du nichoir envoie un événement JSON et la photo JPEG en MQTT par Wi-Fi au broker Mosquitto du Raspberry Pi ; le listener les écrit dans MariaDB ; Flask les lit et sert la galerie au navigateur.">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect x="10" y="10" width="400" height="300" rx="8" class="frame"/>
+<text x="24" y="34" class="tb mute">Nœud hardware (dans le nichoir)</text>
+<rect x="30" y="56" width="120" height="50" rx="6" class="w body "/>
+<text x="90.0" y="77.0" class="tb" text-anchor="middle">PIR SR602</text>
+<text x="90.0" y="94.0" class="ts" text-anchor="middle">détection</text>
+<rect x="30" y="130" width="120" height="58" rx="6" class="w body "/>
+<text x="90.0" y="155.0" class="tb" text-anchor="middle">CD4013</text>
+<text x="90.0" y="172.0" class="ts" text-anchor="middle">réveil + blocage</text>
+<rect x="30" y="214" width="120" height="50" rx="6" class="w body "/>
+<text x="90.0" y="235.0" class="tb" text-anchor="middle">LiPo 2000 mAh</text>
+<text x="90.0" y="252.0" class="ts" text-anchor="middle">VBAT</text>
+<rect x="220" y="56" width="170" height="132" rx="6" class="w body "/>
+<text x="305.0" y="118.0" class="tb" text-anchor="middle">TimerCam</text>
+<text x="305.0" y="135.0" class="ts" text-anchor="middle">ESP32 + OV3660 + RTC</text>
+<rect x="220" y="214" width="170" height="50" rx="6" class="w body "/>
+<text x="305.0" y="235.0" class="tb" text-anchor="middle">LED IR</text>
+<text x="305.0" y="252.0" class="ts" text-anchor="middle">éclairage photo</text>
+<line x1="90" y1="106" x2="90" y2="130" class="w" marker-end="url(#ar)"/>
+<text x="120" y="122" class="ts" text-anchor="middle">front ↑</text>
+<line x1="150" y1="146" x2="220" y2="126" class="w" marker-end="url(#ar)"/>
+<text x="186" y="124" class="ts" text-anchor="middle">faux appui</text>
+<line x1="220" y1="168" x2="150" y2="168" class="w" marker-end="url(#ar)"/>
+<text x="186" y="184" class="ts" text-anchor="middle">G13 / G4</text>
+<line x1="305" y1="188" x2="305" y2="214" class="w" marker-end="url(#ar)"/>
+<text x="320" y="205" class="ts" text-anchor="middle">G4</text>
+<text x="90" y="290" class="ts" text-anchor="middle">alimente tout le nœud</text>
+<rect x="520" y="10" width="440" height="300" rx="8" class="frame"/>
+<text x="534" y="34" class="tb mute">Passerelle Raspberry Pi</text>
+<rect x="540" y="56" width="170" height="54" rx="6" class="w body "/>
+<text x="625.0" y="79.0" class="tb" text-anchor="middle">Mosquitto</text>
+<text x="625.0" y="96.0" class="ts" text-anchor="middle">broker MQTT :1883</text>
+<rect x="540" y="150" width="170" height="54" rx="6" class="w body "/>
+<text x="625.0" y="173.0" class="tb" text-anchor="middle">listener.py</text>
+<text x="625.0" y="190.0" class="ts" text-anchor="middle">abonné nichoir/#</text>
+<rect x="540" y="240" width="170" height="54" rx="6" class="w body "/>
+<text x="625.0" y="263.0" class="tb" text-anchor="middle">MariaDB</text>
+<text x="625.0" y="280.0" class="ts" text-anchor="middle">events + images</text>
+<rect x="770" y="150" width="170" height="54" rx="6" class="w body "/>
+<text x="855.0" y="173.0" class="tb" text-anchor="middle">app.py (Flask)</text>
+<text x="855.0" y="190.0" class="ts" text-anchor="middle">galerie + état</text>
+<line x1="625" y1="110" x2="625" y2="150" class="w" marker-end="url(#ar)"/>
+<text x="660" y="134" class="ts" text-anchor="middle">messages</text>
+<line x1="625" y1="204" x2="625" y2="240" class="w" marker-end="url(#ar)"/>
+<text x="652" y="226" class="ts" text-anchor="middle">INSERT</text>
+<line x1="710" y1="267" x2="855" y2="204" class="w" marker-end="url(#ar)"/>
+<text x="800" y="252" class="ts" text-anchor="middle">SELECT</text>
+<line x1="390" y1="83" x2="540" y2="83" class="w sig" marker-end="url(#ar)"/>
+<text x="465" y="74" class="ts blue" text-anchor="middle">Wi-Fi / MQTT</text>
+<text x="465" y="104" class="ts blue" text-anchor="middle">event (JSON)</text>
+<text x="465" y="118" class="ts blue" text-anchor="middle">photo (JPEG)</text>
+<rect x="990" y="150" width="120" height="54" rx="6" class="w body "/>
+<text x="1050.0" y="173.0" class="tb" text-anchor="middle">Navigateur</text>
+<text x="1050.0" y="190.0" class="ts" text-anchor="middle">HTTP :5000</text>
+<line x1="940" y1="177" x2="990" y2="177" class="w" marker-end="url(#ar)"/>
+</svg>
+</div>
+<figcaption>Le nœud n'est allumé que le temps d'une photo ou d'un heartbeat. Le Raspberry Pi horodate les messages à la réception.</figcaption>
+</figure>
+</section>
+
+</main>
+</div>
+</body>
+</html>
