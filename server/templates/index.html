@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<title>PiouPiou – nichoir</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f6f5f1; color: #1d1f1c; }
+  header { padding: 20px 5vw; background: #2f4a3a; color: #fff; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  main { padding: 20px 5vw 40px; }
+  .status { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 8px; padding: 12px 16px; box-shadow: 0 1px 3px #0002; }
+  .card b { font-size: 22px; display: block; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  figure { margin: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px #0002; }
+  figure img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  figcaption { padding: 8px 10px; font-size: 14px; color: #555; }
+  .low { color: #b3261e; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PiouPiou</h1>
+  <div>{{ stats.pir or 0 }} visite(s) sur les dernières 24 h</div>
+</header>
+<main>
+  <section class="status">
+    {% for s in status %}
+    <div class="card">
+      <span>{{ s.device }}</span>
+      <b class="{{ 'low' if (s.batt_pct or 0) < 20 }}">{{ s.batt_pct }} %</b>
+      {{ s.batt_mv }} mV · {{ s.rssi }} dBm<br>
+      dernier contact : {{ s.received_at.strftime('%d/%m %H:%M') }} ({{ s.type }})
+    </div>
+    {% else %}
+    <div class="card">Aucun message reçu pour l'instant.</div>
+    {% endfor %}
+  </section>
+  <section class="grid">
+    {% for p in photos %}
+    <figure>
+      <a href="{{ url_for('photo', filename=p.filename) }}">
+        <img src="{{ url_for('photo', filename=p.filename) }}" alt="Photo du {{ p.received_at }}" loading="lazy">
+      </a>
+      <figcaption>{{ p.received_at.strftime('%d/%m/%Y %H:%M') }} · batterie {{ p.batt_pct }} %</figcaption>
+    </figure>
+    {% else %}
+    <p>Pas encore de photo.</p>
+    {% endfor %}
+  </section>
+</main>
+</body>
+</html>

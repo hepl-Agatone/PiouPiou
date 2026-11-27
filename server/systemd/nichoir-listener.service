@@ -1,0 +1,15 @@
+[Unit]
+Description=Nichoir - listener MQTT
+After=network-online.target mosquitto.service mariadb.service
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/PiouPiou/server
+EnvironmentFile=/etc/nichoir.env
+ExecStart=/home/pi/PiouPiou/server/.venv/bin/python listener.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

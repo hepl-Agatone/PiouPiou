@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secrets et configuration locale
+.env
+*.env
+!*.env.example
+
+# Données produites par le serveur
+photos/
+
+# Arduino / PlatformIO
+build/
+.pio/
+*.bin
+*.elf
+
+# Éditeurs et systèmes
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
